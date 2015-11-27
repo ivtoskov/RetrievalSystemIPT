@@ -5,6 +5,7 @@ import ch.ethz.dal.tinyir.io.TipsterStream
 import org.w3c.dom.Document
 import javax.xml.parsers.DocumentBuilderFactory
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
+import ch.ethz.dal.tinyir.processing.TipsterParse
 import ch.ethz.dal.tinyir.io.DocStream
 import com.github.aztek.porterstemmer
 import scala.collection.mutable.{Map => MutMap, MutableList}
@@ -17,9 +18,14 @@ class TfIdf(iter : TipsterCorpusIterator, queryWords : MutableList[String] ) {
   var termFreq : Map[String, Int] = null
   
   def run() {
-    termFreq = tf(null)
-    
   }
+  
+  def score(document: TipsterParse, query: List[String])
+  {
+    val words = document.content.split(" ").toList;
+    val score = query.flatMap(q => logtf(words).get(q)).sum
+  }
+  
   
   def logtf(doc : List[String]): Map[String, Double] = logtf(tf(doc))
   
