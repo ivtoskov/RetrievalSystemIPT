@@ -13,17 +13,26 @@ import java.io.File
 import scala.io.Source
 import scala.math.log
 
-class TfIdf(iter : TipsterCorpusIterator, queryWords : MutableList[String] ) {
+object TfIdf {
   
   var termFreq : Map[String, Int] = null
   
-  def run() {
+  def run(iter : TipsterCorpusIterator, queryWords : MutableList[String]) {
+    var dummyQuerry = MutableList[String]()
+    dummyQuerry += "airbus"
+    dummyQuerry += "subsidies"
+    while(iter.hasNext){
+	    	val doc = iter.next
+	    	println(doc.name + " " + score(doc, dummyQuerry.toList))
+	    }
+    
   }
   
-  def score(document: TipsterParse, query: List[String])
+  def score(document: TipsterParse, query: List[String]) : Double = 
   {
     val words = document.content.split(" ").toList;
     val score = query.flatMap(q => logtf(words).get(q)).sum
+    score
   }
   
   

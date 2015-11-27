@@ -8,6 +8,7 @@ import com.github.aztek.porterstemmer
 import scala.collection.mutable.{Map => MutMap, MutableList}
 import java.io.File
 import scala.io.Source
+import main.TfIdf
 
 
 class AlertSystemManager (val resourcePath: String) {
@@ -19,7 +20,7 @@ class AlertSystemManager (val resourcePath: String) {
      val iter = new TipsterCorpusIterator(resourcePath)
      println("Tipster Corpus iterator  initialized")
 	   LoadQueryWords()
-     
+	   TfIdf.run(iter, queryWords)
   }
  
   def LoadQueryWords()
@@ -43,7 +44,7 @@ class AlertSystemManager (val resourcePath: String) {
       if(line.startsWith("<title>"))
           line.replace("<title>", "").replace("Topic", "")
           .replace(":","").replace(";","").replace("&","").replace("-","").trim()
-          .split(" ").foreach { word => if(!word.isEmpty()) queryWords += word }
+          .split(" ").foreach { word => if(!word.isEmpty()) queryWords += word.toLowerCase() }
     
     
     //queryWords.foreach {s => println(s) }
