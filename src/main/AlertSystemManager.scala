@@ -1,54 +1,120 @@
+package main
 
-import ch.ethz.dal.tinyir.io.TipsterStream
-import org.w3c.dom.Document
-import javax.xml.parsers.DocumentBuilderFactory
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
-import ch.ethz.dal.tinyir.io.DocStream
-import com.github.aztek.porterstemmer
-import scala.collection.mutable.{Map => MutMap, MutableList}
-import java.io.File
-import scala.io.Source
-import main.TfIdf
+import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
 
-
+/**
+ * Class that manages the whole flow.
+ *
+ * @param resourcePath Path to a folder with the zip
+ *                     files containing the documents.
+ *
+ * @author Stefan Irimescu
+ */
 class AlertSystemManager (val resourcePath: String) {
-  
-  var queryWords : MutableList[String] = null
-  
+  var cf = MutMap[String, Int]() // Collection frequencies
+  var df = MutMap[String, Int]() // Document frequencies
+
+  /**
+   * The main method where the whole workflow is executed.
+   */
   def run() {
-     println("Initializing, reading zip files")
-     val iter = new TipsterCorpusIterator(resourcePath)
-     println("Tipster Corpus iterator  initialized")
-	   LoadQueryWords()
-	   TfIdf.run(iter, queryWords)
-  }
- 
-  def LoadQueryWords()
-  {
-    queryWords = MutableList[String]()
-    
-    /* CODE for DOM parsing, not working since topics file is not a valid XML file
-    val dbFactory = DocumentBuilderFactory.newInstance
-    val dBuilder = dbFactory.newDocumentBuilder
-    val doc = dBuilder.parse("Resources/topics")
-    val topics = doc.getElementsByTagName("title")
-    for (i <- 0 until topics.getLength)
-    {
-      queryWords += topics.item(i).getTextContent
+    val queries = loadQueries()                               // Load the queries from the topics file
+    computeCollectionInformation()                            // Compute cf and df
+    TfIdf.initCollectionStats(cf, df)                         // Initialize cf and df for the tf-idf computation
+    LanguageModel.initCollectionStats(cf, df)                 // Initialize cf and df for the LM computation
+
+    // Iterator for parsing all the documents and evaluating the score for all the queries
+    val queryScoreIterator = new TipsterCorpusIterator(resourcePath)
+    // A map that stores for each query its corresponding hundred best matching documents based on tf-idf score
+    val tfIdfScores: Map[Query, CustomMaxHeap] = queries.map(q => q -> new CustomMaxHeap(100)).toMap
+    // A map that stores for each query its corresponding hundred best matching documents based on LM score
+    val lmScores: Map[Query, CustomMaxHeap] = queries.map(q => q -> new CustomMaxHeap(100)).toMap
+
+    while(queryScoreIterator.hasNext) {
+      val doc = queryScoreIterator.next()
+      for(query <- queries) {
+        // Compute the tf-idf score for the given doc and query
+        val tfIdfScore = TfIdf.score(doc, query.tokens)
+        tfIdfScores.get(query).get.add(tfIdfScore, doc.name)
+
+        // Compute the LM score for the given doc and query
+        val lmScore = LanguageModel.score(doc, query.tokens)
+        lmScores.get(query).get.add(lmScore, doc.name)
+      }
     }
-    
-    queryWords.foreach {s => println(s) }
-    */
-    
-    for (line <- Source.fromFile("Resources/topics").getLines)
-      if(line.startsWith("<title>"))
-          line.replace("<title>", "").replace("Topic", "")
-          .replace(":","").replace(";","").replace("&","").replace("-","").trim()
-          .split(" ").foreach { word => if(!word.isEmpty()) queryWords += word.toLowerCase() }
-    
-    
-    //queryWords.foreach {s => println(s) }
+
+    // Compute the final result
+    computeResult(tfIdfScores, lmScores)
   }
-  
-  
+
+  /**
+   * Method that loads the queries from the topics file.
+   *
+   * @return List containing all the queries in the topics file.
+   */
+  def loadQueries() : List[Query] = {
+    var queries = MutList[Query]()
+    queries += new Query(51, Seq("airbus", "subsidies").toList) // TODO Example query. This line has to be deleted.
+
+    // TODO Needs to be implemented. Load all the topics from the topics file.
+    /*queryWords = mutable.MutableList[String]()
+
+    for (line <- Source.fromFile("Resources/topics").getLines()) {
+      if (line.startsWith("<title>")) {
+        line.replace("<title>", "").replace("Topic", "")
+          .replace(":", "").replace(";", "").replace("&", "").replace("-", "").trim()
+          .split(" ").foreach { word => if (!word.isEmpty) queryWords += word.toLowerCase }
+      }
+    }*/
+
+    queries.toList
+  }
+
+  /**
+   * This method loads the collection and document frequencies
+   * in the variables cf and df respectively. If those frequencies
+   * have been previously computed and cached in files, the information
+   * gets loaded from these files which removes the necessity of a whole parse.
+   *
+   */
+  def computeCollectionInformation(): Unit = {
+    val cached = false
+    if(cached) {
+      println("Loading cf and df...")
+      // TODO Load cf and df from file
+      println("Loaded cf and df successfully.")
+    } else {
+      // Iterator for the first parse where the collection and document frequencies are computed
+      val iterator = new TipsterCorpusIterator(resourcePath)
+
+      println("Computing cf and df...")
+      while(iterator.hasNext) {
+        val doc = iterator.next()
+        cf ++= doc.tokens.groupBy(identity).mapValues(l => l.length + cf.getOrElse(l.head, 0))
+        df ++= doc.tokens.distinct.map(t => t -> (1 + df.getOrElse(t,0)))
+      }
+      println("Computed cf and df successfully.")
+      cacheCollectionInformation()
+    }
+  }
+
+  /**
+   * This method caches the collection and document frequencies
+   * into files that can be used for future runs.
+   */
+  def cacheCollectionInformation(): Unit = {
+    // TODO
+  }
+
+  /**
+   * This method computes the statistics for the tf-idf and LM scores
+   * based on the information contained in the qrels.
+   *
+   * @param tfIdfScores The best matching documents for a given query based on the tf-idf scores.
+   * @param lmScores The best matching documents for a given query based on the LM scores.
+   */
+  def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
+    // TODO Compute MAP, precision etc.
+  }
 }
