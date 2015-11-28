@@ -12,27 +12,39 @@ import scala.collection.mutable.{Map => MutMap, MutableList}
 import java.io.File
 import scala.io.Source
 import scala.math.log
+import scala.math.log10
 
 object TfIdf {
   
   var termFreq : Map[String, Int] = null
+   var df = collection.mutable.Map[String, Int]()
   
   def run(iter : TipsterCorpusIterator, queryWords : MutableList[String]) {
-    var dummyQuerry = MutableList[String]()
-    dummyQuerry += "airbus"
-    dummyQuerry += "subsidies"
+    var dummyQuery = MutableList[String]()
+    dummyQuery += "airbus"
+    dummyQuery += "subsidies"
+    
+    
+    println("Computing df")
     while(iter.hasNext){
 	    	val doc = iter.next
-	    	println(doc.name + " " + score(doc, dummyQuerry.toList))
+	    	df ++= doc.tokens.distinct.map(t => t -> (1+df.getOrElse(t,0)))
 	    }
+    println("Computed df")
     
   }
   
   def score(document: TipsterParse, query: List[String]) : Double = 
   {
+     
     val words = document.content.split(" ").toList;
-    val score = query.flatMap(q => logtf(words).get(q)).sum
+    val score = query.flatMap(q =>  tfidf(words,q) ).sum
     score
+  }
+  
+  def tfidf(words : List[String], q: String) : Option[Double] = 
+  {
+    Option(logtf(words).get(q).get *idf(df.toMap, df.size).get(q).get)
   }
   
   
@@ -43,13 +55,18 @@ object TfIdf {
   def logtf(tf: Map[String,Int]) : Map[String, Double] =
   {  
     val sum = tf.values.sum.toDouble
-    tf.mapValues( v => log( (v.toDouble+1.0) / sum ) )
+    tf.mapValues( v => log2( (v.toDouble+1.0) / sum ) )
   }
   
   def atf(tf : Map[String, Int]) = {
     val max = tf.values.max.toDouble
     tf.mapValues( f => 0.5 * f / max + 0.5 )
   }
+  
+  def log2 (x: Double) : Double = log10(x) / log10(2.0)
+  def idf(df: Map[String, Int], n: Int) : Map[String, Double] = df.mapValues(log2(n) - log2(_))
+  
+  
   
   
   
