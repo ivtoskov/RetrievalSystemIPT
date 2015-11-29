@@ -2,6 +2,7 @@ package main
 
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
 import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
+import scala.io.Source
 
 /**
  * Class that manages the whole flow.
@@ -14,6 +15,7 @@ import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
 class AlertSystemManager (val resourcePath: String) {
   var cf = MutMap[String, Int]() // Collection frequencies
   var df = MutMap[String, Int]() // Document frequencies
+  var perQueryRelDocIds: Map[String, List[String]] = null //Map containing the Queries and the relevant documents(dataset)
 
   /**
    * The main method where the whole workflow is executed.
@@ -117,6 +119,22 @@ class AlertSystemManager (val resourcePath: String) {
    * @param lmScores The best matching documents for a given query based on the LM scores.
    */
   def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
-    // TODO Compute MAP, precision etc.
+
+    /*
+    val file = "/Users/prabhu/IdeaProjects/SearchEngine/Resources/qrels"
+    val lines = Source.fromFile(file).getLines.toList.map(x => x.split(" ").toList)
+    perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x(0),x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
+
+    val ev = new Evaluate
+    var map:Double = 0.0
+
+    perQueryRelDocIds.foreach(x => {
+      ev.eval(tfIdfScores.get(x._1),x._2)
+      println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
+      map = map + ev.AvgPrecision
+    })
+
+    map = map/perQueryRelDocIds.size.toDouble
+    */
   }
 }
