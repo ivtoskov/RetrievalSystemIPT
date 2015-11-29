@@ -22,7 +22,7 @@ class AlertSystemManager (val resourcePath: String) {
     val queries = loadQueries()                               // Load the queries from the topics file
     computeCollectionInformation()                            // Compute cf and df
     TfIdf.initCollectionStats(cf, df)                         // Initialize cf and df for the tf-idf computation
-    LanguageModel.initCollectionStats(cf, df)                 // Initialize cf and df for the LM computation
+    LanguageModel.initCollectionStats(cf)                     // Initialize cf and df for the LM computation
 
     // Iterator for parsing all the documents and evaluating the score for all the queries
     val queryScoreIterator = new TipsterCorpusIterator(resourcePath)
@@ -33,13 +33,15 @@ class AlertSystemManager (val resourcePath: String) {
 
     while(queryScoreIterator.hasNext) {
       val doc = queryScoreIterator.next()
+      val docLength = doc.tokens.size.toDouble
+      val docTf: Map[String, Int] = TfIdf.tf(doc.tokens)
       for(query <- queries) {
         // Compute the tf-idf score for the given doc and query
         val tfIdfScore = TfIdf.score(doc, query.tokens)
         tfIdfScores.get(query).get.add(tfIdfScore, doc.name)
 
         // Compute the LM score for the given doc and query
-        val lmScore = LanguageModel.score(doc, query.tokens)
+        val lmScore = LanguageModel.score(docTf, query.tokens, docLength)
         lmScores.get(query).get.add(lmScore, doc.name)
       }
     }
