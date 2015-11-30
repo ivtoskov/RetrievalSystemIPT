@@ -1,8 +1,9 @@
 package main
 
-import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
+import ch.ethz.dal.tinyir.processing.{Tokenizer, TipsterCorpusIterator}
 import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
 import java.nio.file.{Paths, Files}
+import scala.io.Source
 
 /**
  * Class that manages the whole flow.
@@ -58,19 +59,23 @@ class AlertSystemManager (val resourcePath: String) {
    * @return List containing all the queries in the topics file.
    */
   def loadQueries() : List[Query] = {
-    var queries = MutList[Query]()
-    queries += new Query(51, Seq("airbus", "subsidies").toList) // TODO Example query. This line has to be deleted.
+    val queries = MutList[Query]()
 
-    // TODO Needs to be implemented. Load all the topics from the topics file.
-    /*queryWords = mutable.MutableList[String]()
+    var num: String = ""
 
     for (line <- Source.fromFile("Resources/topics").getLines()) {
-      if (line.startsWith("<title>")) {
-        line.replace("<title>", "").replace("Topic", "")
-          .replace(":", "").replace(";", "").replace("&", "").replace("-", "").trim()
-          .split(" ").foreach { word => if (!word.isEmpty) queryWords += word.toLowerCase }
+      if (line.startsWith("<num>")) {
+        val helper = line.split("Number:\\s*")
+        num = helper(1).replace(" ", "")
       }
-    }*/
+
+      if (line.startsWith("<title>")) {
+        val helper = line.split("Topic:\\s*")
+        queries += new Query(num, Tokenizer.tokenize(helper(1)))
+      }
+    }
+    println("Queries: ")
+    queries.toList.foreach(q => println(q.num + " " + q.tokens))
 
     queries.toList
   }
@@ -142,22 +147,21 @@ class AlertSystemManager (val resourcePath: String) {
    * @param lmScores The best matching documents for a given query based on the LM scores.
    */
   def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
-
-    val file = "/Users/prabhu/IdeaProjects/SearchEngine/Resources/qrels"
-    val lines = Source.fromFile(file).getLines.toList.map(x => x.split(" ").toList)
-    perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x(0),x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
+    val file = "Resources/qrels"
+    val lines = Source.fromFile(file).getLines().toList.map(x => x.split(" ").toList)
+    perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x.head, x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
 
     var map:Double = 0.0
 
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
-      ev.eval(perQueryRelDocIds(x._1.num.toString),x._2.returnDocuments)
-      println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
+      ev.eval(perQueryRelDocIds(x._1.num),x._2.returnDocuments)
+      println("Precision: " + ev.precision+ " Recall: " + ev.recall + " F1:" + ev.f1)
       map = map + ev.AvgPrecision
     } )
 
-    map = map/perQueryRelDocIds.size.toDouble
-    println("Map:"+map)
+    map = map / perQueryRelDocIds.size.toDouble
+    println("Map: "+map)
   }
 
   /**

@@ -1,5 +1,4 @@
 package main
-
 /**
  * The main class that starts the application.
  *

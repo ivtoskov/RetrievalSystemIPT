@@ -9,4 +9,4 @@ package main
  *
  * @author Ivaylo Toskov
  */
-class Query(val num: Integer, val tokens: List[String]) {}
+class Query(val num: String, val tokens: List[String]) {}

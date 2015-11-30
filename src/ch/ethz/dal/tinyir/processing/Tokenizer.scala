@@ -2,5 +2,5 @@ package ch.ethz.dal.tinyir.processing
 
 object Tokenizer {
   def tokenize (text: String) : List[String] =
-    text.split("[ .,;:?!\t\n\r\f]+").toList
+    text.toLowerCase.split("[ .,;:?!\t\n\r\f]+").toList
 }
