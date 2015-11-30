@@ -6,22 +6,26 @@ import scala.math.log10
 
 object TfIdf {
   var termFreq : Map[String, Int] = null
-  var cf = MutMap[String, Int]()
-  var df = MutMap[String, Int]()
+  var idf = Map[String, Double]()
 
-  def initCollectionStats(cfe: MutMap[String, Int], dfe: MutMap[String, Int]): Unit = {
-    cf = cfe
-    df = dfe
+  def initCollectionStats(df: MutMap[String, Int]): Unit = {
+    idf = idf(df.toMap, df.size)
   }
   
   def score(document: TipsterParse, query: List[String]) : Double = {
-    val words = document.content.split(" ").toList
-    val score = query.flatMap(q =>  tfidf(words,q) ).sum
+    val words = document.tokens
+    val score = query.flatMap(q =>  tfidf(words, q) ).sum
     score
   }
   
   def tfidf(words : List[String], q: String) : Option[Double] = {
-    Option(logtf(words).get(q).get *idf(df.toMap, df.size).get(q).get)
+    val containedInDocument = logtf(words).get(q)
+    if(containedInDocument.isEmpty) {
+      return None
+    }
+    val containedInCollection = idf.get(q)
+
+    Option(containedInDocument.get * containedInCollection.get)
   }
 
   def logtf(doc : List[String]): Map[String, Double] = logtf(tf(doc))

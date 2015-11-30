@@ -24,7 +24,7 @@ class AlertSystemManager (val resourcePath: String) {
   def run() {
     val queries = loadQueries()                               // Load the queries from the topics file
     computeCollectionInformation()                            // Compute cf and df
-    TfIdf.initCollectionStats(cf, df)                         // Initialize cf and df for the tf-idf computation
+    TfIdf.initCollectionStats(df)                         // Initialize cf and df for the tf-idf computation
     LanguageModel.initCollectionStats(cf)                     // Initialize cf and df for the LM computation
 
     // Iterator for parsing all the documents and evaluating the score for all the queries
