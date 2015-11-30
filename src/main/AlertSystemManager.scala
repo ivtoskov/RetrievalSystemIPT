@@ -66,7 +66,7 @@ class AlertSystemManager (val resourcePath: String) {
     for (line <- Source.fromFile("Resources/topics").getLines()) {
       if (line.startsWith("<num>")) {
         val helper = line.split("Number:\\s*")
-        num = helper(1).replace(" ", "")
+        num = helper(1).replace(" ", "").substring(1)
       }
 
       if (line.startsWith("<title>")) {
@@ -147,32 +147,43 @@ class AlertSystemManager (val resourcePath: String) {
    * @param lmScores The best matching documents for a given query based on the LM scores.
    */
   def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
+    val fileWriter = new java.io.PrintWriter(new java.io.File("performanceStats.txt"))
+
     val file = "Resources/qrels"
     val lines = Source.fromFile(file).getLines().toList.map(x => x.split(" ").toList)
-    perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x.head,x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
+    perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head,x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
 
-    var map:Double = 0.0
+    var map: Double = 0.0
 
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
-      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num.toString))
-      println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
+      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num))
+      fileWriter.println("Statistics for document " + x._1.num + ":")
+      fileWriter.println("Precision: " + ev.precision + ", Recall: " + ev.recall +
+        ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
+      fileWriter.println()
       map = map + ev.AvgPrecision
     } )
-    map = map/perQueryRelDocIds.size.toDouble
-    println("Map(tfIdf):"+map)
+    map = map / perQueryRelDocIds.size.toDouble
+    val tfIdfMAP = map
 
     map = 0.0
     lmScores.foreach( x => {
       val ev = new Evaluate
-      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num.toString))
-      println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
+      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num))
+      fileWriter.println("Statistics for document " + x._1.num + ":")
+      fileWriter.println("Precision: " + ev.precision + ", Recall: " + ev.recall +
+        ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
+      fileWriter.println()
       map = map + ev.AvgPrecision
     } )
-    map = map/perQueryRelDocIds.size.toDouble
-    println("Map(lm):"+map)
-  }
+    map = map / perQueryRelDocIds.size.toDouble
 
+    fileWriter.println("MAP of the tf-idf scoring: " + tfIdfMAP)
+    fileWriter.println("MAP of the language model scoring: " + map)
+
+    fileWriter.close()
+  }
 
   /**
    * A helper method that executes a given operation
