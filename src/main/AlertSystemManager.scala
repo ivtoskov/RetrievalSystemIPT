@@ -143,22 +143,21 @@ class AlertSystemManager (val resourcePath: String) {
    */
   def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
 
-    /*
     val file = "/Users/prabhu/IdeaProjects/SearchEngine/Resources/qrels"
     val lines = Source.fromFile(file).getLines.toList.map(x => x.split(" ").toList)
     perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x(0),x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
 
-    val ev = new Evaluate
     var map:Double = 0.0
 
-    perQueryRelDocIds.foreach(x => {
-      ev.eval(tfIdfScores.get(x._1),x._2)
+    tfIdfScores.foreach( x => {
+      val ev = new Evaluate
+      ev.eval(perQueryRelDocIds(x._1.num.toString),x._2.returnDocuments)
       println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
       map = map + ev.AvgPrecision
-    })
+    } )
 
     map = map/perQueryRelDocIds.size.toDouble
-    */
+    println("Map:"+map)
   }
 
   /**
