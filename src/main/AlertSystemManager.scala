@@ -120,7 +120,7 @@ class AlertSystemManager (val resourcePath: String) {
    */
   def computeResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
 
-    val file = "/Users/prabhu/IdeaProjects/SearchEngine/Resources/qrels"
+    val file = "Resources/qrels"
     val lines = Source.fromFile(file).getLines.toList.map(x => x.split(" ").toList)
     perQueryRelDocIds = lines.filter(x => x(3)=="1").map(x => (x(0),x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
 
@@ -128,12 +128,21 @@ class AlertSystemManager (val resourcePath: String) {
 
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
-      ev.eval(perQueryRelDocIds(x._1.num.toString),x._2.returnDocuments)
+      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num.toString))
       println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
       map = map + ev.AvgPrecision
     } )
-
     map = map/perQueryRelDocIds.size.toDouble
-    println("Map:"+map)
+    println("Map(tfIdf):"+map)
+
+    map = 0.0
+    lmScores.foreach( x => {
+      val ev = new Evaluate
+      ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num.toString))
+      println("Precision:"+ev.precision+" Recall:"+ev.recall+" F1:"+ev.f1)
+      map = map + ev.AvgPrecision
+    } )
+    map = map/perQueryRelDocIds.size.toDouble
+    println("Map(lm):"+map)
   }
 }
