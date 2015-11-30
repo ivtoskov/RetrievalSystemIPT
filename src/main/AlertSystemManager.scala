@@ -2,7 +2,7 @@ package main
 
 import ch.ethz.dal.tinyir.processing.TipsterCorpusIterator
 import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
-import scala.io.Source
+import java.nio.file.{Paths, Files}
 
 /**
  * Class that manages the whole flow.
@@ -83,10 +83,10 @@ class AlertSystemManager (val resourcePath: String) {
    *
    */
   def computeCollectionInformation(): Unit = {
-    val cached = false
+    val cached = Files.exists(Paths.get("Resources/cachedCf.csv")) && Files.exists(Paths.get("Resources/cachedDf.csv"))
     if(cached) {
       println("Loading cf and df...")
-      // TODO Load cf and df from file
+      loadCollectionInformation()
       println("Loaded cf and df successfully.")
     } else {
       // Iterator for the first parse where the collection and document frequencies are computed
@@ -108,7 +108,30 @@ class AlertSystemManager (val resourcePath: String) {
    * into files that can be used for future runs.
    */
   def cacheCollectionInformation(): Unit = {
-    // TODO
+    // Cache the document frequencies
+    printToFile(new java.io.File("Resources/cachedDf.csv")) { p =>
+      df.keys.foreach(word => p.println(word + "," + df(word)))
+    }
+
+    // Cache the collection frequencies
+    printToFile(new java.io.File("Resources/cachedCf.csv")) { p =>
+      cf.keys.foreach(word => p.println(word + "," + cf(word)))
+    }
+  }
+
+  /**
+   * This method loads the cached document and collection frequencies.
+   */
+  def loadCollectionInformation(): Unit = {
+    for(line <- io.Source.fromFile("Resources/cachedDf.csv").getLines()) {
+      val keyValuePair = line.split(",")
+      df(keyValuePair(0)) = keyValuePair(1).toInt
+    }
+
+    for(line <- io.Source.fromFile("Resources/cachedCf.csv").getLines()) {
+      val keyValuePair = line.split(",")
+      cf(keyValuePair(0)) = keyValuePair(1).toInt
+    }
   }
 
   /**
@@ -136,5 +159,17 @@ class AlertSystemManager (val resourcePath: String) {
 
     map = map/perQueryRelDocIds.size.toDouble
     */
+  }
+
+  /**
+   * A helper method that executes a given operation
+   * and writes the output to a specified file.
+   *
+   * @param f The output file where the result is written.
+   * @param op The operation that should be executed.
+   */
+  def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
+    val p = new java.io.PrintWriter(f)
+    try { op(p) } finally { p.close() }
   }
 }
