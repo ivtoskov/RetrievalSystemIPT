@@ -13,13 +13,13 @@ object TfIdf {
   }
   
   def score(document: TipsterParse, query: List[String]) : Double = {
-    val words = document.tokens
-    val score = query.flatMap(q =>  tfidf(words, q) ).sum
+    val words = logtf(document.tokens)
+    val score = query.flatMap(q => tfidf(words, q) ).sum
     score
   }
   
-  def tfidf(words : List[String], q: String) : Option[Double] = {
-    val containedInDocument = logtf(words).get(q)
+  def tfidf(words : Map[String, Double], q: String) : Option[Double] = {
+    val containedInDocument = words.get(q)
     if(containedInDocument.isEmpty) {
       return None
     }
@@ -34,7 +34,7 @@ object TfIdf {
   
   def logtf(tf: Map[String,Int]) : Map[String, Double] = {
     val sum = tf.values.sum.toDouble
-    tf.mapValues( v => log2( (v.toDouble+1.0) / sum ) )
+    tf.mapValues( v => log2( 1.0 + v.toDouble / sum ) )
   }
   
   def atf(tf : Map[String, Int]) = {
