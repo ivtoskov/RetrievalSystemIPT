@@ -4,6 +4,7 @@ import ch.ethz.dal.tinyir.processing.{Tokenizer, TipsterCorpusIterator}
 import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
 import java.nio.file.{Paths, Files}
 import scala.io.Source
+import scala.util.control.Breaks._
 
 /**
  * Class that manages the whole flow.
@@ -36,7 +37,8 @@ class AlertSystemManager (val resourcePath: String) {
     val tfIdfScores: Map[Query, CustomMaxHeap] = queries.map(q => q -> new CustomMaxHeap(100)).toMap
     // A map that stores for each query its corresponding hundred best matching documents based on LM score
     val lmScores: Map[Query, CustomMaxHeap] = queries.map(q => q -> new CustomMaxHeap(100)).toMap
-
+    var i=1
+    breakable(
     while(queryScoreIterator.hasNext) {
       val doc = queryScoreIterator.next()
       val docLength = doc.tokens.size.toDouble
@@ -50,9 +52,15 @@ class AlertSystemManager (val resourcePath: String) {
         // Compute the LM score for the given doc and query
         val lmScore = LanguageModel.score(docTf, query.tokens, docLength)
         lmScores.get(query).get.add(lmScore, doc.name)
+        println(i+" "+doc.name+" "+tfIdfScore+" "+lmScore)
+        i = i+1
       }
     }
+    )
 
+    lmScores.foreach(x => println(x._2.returnDocuments))
+
+    println("Computing Final Results..")
     // Compute the final result
     computeResult(tfIdfScores, lmScores)
   }
@@ -161,6 +169,8 @@ class AlertSystemManager (val resourcePath: String) {
     perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head,x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
 
     var map: Double = 0.0
+
+    perQueryRelDocIds.foreach(x => println(x._2))
 
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
