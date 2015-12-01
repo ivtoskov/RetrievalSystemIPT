@@ -9,8 +9,8 @@ object TfIdf {
   var numberOfDocuments: Long = 0L
 
   def initCollectionStats(df: MutMap[String, Int], numOfDocuments: Long): Unit = {
-    idf = idf(df.toMap, numberOfDocuments)
     numberOfDocuments = numOfDocuments
+    idf = idf(df.toMap, numberOfDocuments)
   }
   
   def score(words: Map[String, Double], query: List[String]) : Double = {

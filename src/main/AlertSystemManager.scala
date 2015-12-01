@@ -45,11 +45,11 @@ class AlertSystemManager (val resourcePath: String) {
       for(query <- queries) {
         // Compute the tf-idf score for the given doc and query
         val tfIdfScore = TfIdf.score(logDocTf, query.tokens)
-        tfIdfScores.get(query).get.add(tfIdfScore, doc.name)
+        tfIdfScores.get(query).get.add(tfIdfScore, doc.name.replaceAll("-", ""))
 
         // Compute the LM score for the given doc and query
         val lmScore = LanguageModel.score(docTf, query.tokens, docLength)
-        lmScores.get(query).get.add(lmScore, doc.name)
+        lmScores.get(query).get.add(lmScore, doc.name.replaceAll("-", ""))
       }
     }
 
@@ -92,7 +92,8 @@ class AlertSystemManager (val resourcePath: String) {
    *
    */
   def computeCollectionInformation(queryTerms: Set[String]): Unit = {
-    val cached = Files.exists(Paths.get("Resources/cachedCf.csv")) && Files.exists(Paths.get("Resources/cachedDf.csv"))
+    val cached = Files.exists(Paths.get("Resources/cachedCf.csv")) &&
+      Files.exists(Paths.get("Resources/cachedDf.csv")) && Files.exists(Paths.get("Resources/globalStats.csv"))
     if(cached) {
       println("Loading cf and df...")
       loadCollectionInformation()
@@ -113,6 +114,8 @@ class AlertSystemManager (val resourcePath: String) {
       println("Computed cf and df successfully.")
       cacheCollectionInformation()
     }
+    println("Total number of documents: " + numberOfDocuments)
+    println("Total number of tokens: " + numberOfTokens)
   }
 
   /**
@@ -124,10 +127,16 @@ class AlertSystemManager (val resourcePath: String) {
     printToFile(new java.io.File("Resources/cachedDf.csv")) { p =>
       df.keys.foreach(word => p.println(word + "," + df(word)))
     }
+    printToFile(new java.io.File("Resources/globalStats.csv")) {
+      p => p.println("Number of documents: " + numberOfDocuments)
+    }
 
     // Cache the collection frequencies
     printToFile(new java.io.File("Resources/cachedCf.csv")) { p =>
       cf.keys.foreach(word => p.println(word + "," + cf(word)))
+    }
+    printToFile(new java.io.File("Resources/globalStats.csv")) {
+      p => p.append("Number of tokens: " + numberOfTokens)
     }
   }
 
@@ -144,6 +153,16 @@ class AlertSystemManager (val resourcePath: String) {
       val keyValuePair = line.split(",")
       cf(keyValuePair(0)) = keyValuePair(1).toInt
     }
+
+    for(line <- io.Source.fromFile("Resources/globalStats.csv").getLines()) {
+      if(line.startsWith("Number of documents:")) {
+        val keyValuePair = line.split(": ")
+        numberOfDocuments = keyValuePair(1).toLong
+      } else if(line.startsWith("Number of tokens:")) {
+        val keyValuePair = line.split(": ")
+        numberOfTokens = keyValuePair(1).toLong
+      }
+    }
   }
 
   /**
@@ -158,14 +177,15 @@ class AlertSystemManager (val resourcePath: String) {
 
     val file = "Resources/qrels"
     val lines = Source.fromFile(file).getLines().toList.map(x => x.split(" ").toList)
-    perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head,x(2))).groupBy(_._1).mapValues(_.map(x => x._2))
+    perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head,x(2).replaceAll("-", ""))).groupBy(_._1).mapValues(_.map(x => x._2))
 
     var map: Double = 0.0
 
+    fileWriter.println("tf-idf scores: ")
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
       ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num))
-      fileWriter.println("Statistics for document " + x._1.num + ":")
+      fileWriter.println("Statistics for query " + x._1.num + ":")
       fileWriter.println("Precision: " + ev.precision + ", Recall: " + ev.recall +
         ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
       fileWriter.println()
@@ -175,10 +195,12 @@ class AlertSystemManager (val resourcePath: String) {
     val tfIdfMAP = map
 
     map = 0.0
+    fileWriter.println("-----------------------------------------------------")
+    fileWriter.println("\n\n\nLM scores: ")
     lmScores.foreach( x => {
       val ev = new Evaluate
       ev.eval(x._2.returnDocuments, perQueryRelDocIds(x._1.num))
-      fileWriter.println("Statistics for document " + x._1.num + ":")
+      fileWriter.println("Statistics for query " + x._1.num + ":")
       fileWriter.println("Precision: " + ev.precision + ", Recall: " + ev.recall +
         ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
       fileWriter.println()
