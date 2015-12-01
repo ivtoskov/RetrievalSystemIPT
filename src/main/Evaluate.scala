@@ -15,8 +15,9 @@ class Evaluate {
   def eval (retreiv: List[String], relev: List[String]) = {
     var i = 1.0
 
+    val rel = relev.map(x => x.replaceAll("-",""))
     retreiv.foreach( x => {
-      if(relev.contains(x)){
+      if(rel.contains(x)){
         precision = (precision * (i-1) + 1.0) / i
         recall += 1.0
         AvgPrecision += precision

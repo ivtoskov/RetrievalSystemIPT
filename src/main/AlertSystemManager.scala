@@ -53,6 +53,7 @@ class AlertSystemManager (val resourcePath: String) {
       }
     }
 
+    println("Computing Final Results...")
     // Compute the final result
     computeResult(tfIdfScores, lmScores)
   }
@@ -177,7 +178,7 @@ class AlertSystemManager (val resourcePath: String) {
 
     val file = "Resources/qrels"
     val lines = Source.fromFile(file).getLines().toList.map(x => x.split(" ").toList)
-    perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head,x(2).replaceAll("-", ""))).groupBy(_._1).mapValues(_.map(x => x._2))
+    perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head, x(2).replaceAll("-", ""))).groupBy(_._1).mapValues(_.map(x => x._2))
 
     var map: Double = 0.0
 

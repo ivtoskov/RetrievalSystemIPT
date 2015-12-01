@@ -7,7 +7,7 @@ import scala.collection.mutable.{Map => MutMap}
  */
 object MainObject {
   def main(args: Array[String]) {
-    var linkArg : String = "/home/kennelcrash/MySpace/Studium/ETH/Semester1/InformationRetrieval/Project2/zips"
+    var linkArg : String = "Resources/zips"
     if(args.length > 0)
       linkArg = args.apply(0)
     val manager = new AlertSystemManager(linkArg)
