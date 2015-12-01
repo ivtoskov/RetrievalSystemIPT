@@ -1,21 +1,20 @@
 package main
 
-import ch.ethz.dal.tinyir.processing.TipsterParse
 import scala.collection.mutable.{Map => MutMap}
 import scala.math.log10
 
 object TfIdf {
   var termFreq : Map[String, Int] = null
   var idf = Map[String, Double]()
+  var numberOfDocuments: Long = 0L
 
-  def initCollectionStats(df: MutMap[String, Int]): Unit = {
-    idf = idf(df.toMap, df.size)
+  def initCollectionStats(df: MutMap[String, Int], numOfDocuments: Long): Unit = {
+    idf = idf(df.toMap, numberOfDocuments)
+    numberOfDocuments = numOfDocuments
   }
   
-  def score(document: TipsterParse, query: List[String]) : Double = {
-    val words = logtf(document.tokens)
-    val score = query.flatMap(q => tfidf(words, q) ).sum
-    score
+  def score(words: Map[String, Double], query: List[String]) : Double = {
+    query.flatMap(q => tfidf(words, q) ).sum
   }
   
   def tfidf(words : Map[String, Double], q: String) : Option[Double] = {
@@ -43,5 +42,5 @@ object TfIdf {
   }
   
   def log2 (x: Double) : Double = log10(x) / log10(2.0)
-  def idf(df: Map[String, Int], n: Int) : Map[String, Double] = df.mapValues(log2(n) - log2(_))
+  def idf(df: Map[String, Int], n: Long) : Map[String, Double] = df.mapValues(log2(n) - log2(_))
 }

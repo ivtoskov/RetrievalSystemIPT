@@ -17,15 +17,18 @@ class AlertSystemManager (val resourcePath: String) {
   var cf = MutMap[String, Int]() // Collection frequencies
   var df = MutMap[String, Int]() // Document frequencies
   var perQueryRelDocIds: Map[String, List[String]] = null //Map containing the Queries and the relevant documents(dataset)
+  var numberOfDocuments: Long = 0L // Corresponds to the total number of documents in the corpus
+  var numberOfTokens: Long = 0L // Correspons to the total number of tokens in the corpus
 
   /**
    * The main method where the whole workflow is executed.
    */
   def run() {
-    val queries = loadQueries()                               // Load the queries from the topics file
-    computeCollectionInformation()                            // Compute cf and df
-    TfIdf.initCollectionStats(df)                         // Initialize cf and df for the tf-idf computation
-    LanguageModel.initCollectionStats(cf)                     // Initialize cf and df for the LM computation
+    val queries: List[Query] = loadQueries()                  // Load the queries from the topics file
+    val queryTerms: Set[String] = queries.flatMap(_.tokens).toSet // Set containing unique terms from all of the queries
+    computeCollectionInformation(queryTerms)                            // Compute cf and df
+    TfIdf.initCollectionStats(df, numberOfDocuments)                             // Initialize cf and df for the tf-idf computation
+    LanguageModel.initCollectionStats(cf, numberOfTokens)                     // Initialize cf and df for the LM computation
 
     // Iterator for parsing all the documents and evaluating the score for all the queries
     val queryScoreIterator = new TipsterCorpusIterator(resourcePath)
@@ -38,9 +41,10 @@ class AlertSystemManager (val resourcePath: String) {
       val doc = queryScoreIterator.next()
       val docLength = doc.tokens.size.toDouble
       val docTf: Map[String, Int] = TfIdf.tf(doc.tokens)
+      val logDocTf: Map[String, Double] = TfIdf.logtf(docTf)
       for(query <- queries) {
         // Compute the tf-idf score for the given doc and query
-        val tfIdfScore = TfIdf.score(doc, query.tokens)
+        val tfIdfScore = TfIdf.score(logDocTf, query.tokens)
         tfIdfScores.get(query).get.add(tfIdfScore, doc.name)
 
         // Compute the LM score for the given doc and query
@@ -87,7 +91,7 @@ class AlertSystemManager (val resourcePath: String) {
    * gets loaded from these files which removes the necessity of a whole parse.
    *
    */
-  def computeCollectionInformation(): Unit = {
+  def computeCollectionInformation(queryTerms: Set[String]): Unit = {
     val cached = Files.exists(Paths.get("Resources/cachedCf.csv")) && Files.exists(Paths.get("Resources/cachedDf.csv"))
     if(cached) {
       println("Loading cf and df...")
@@ -100,8 +104,11 @@ class AlertSystemManager (val resourcePath: String) {
       println("Computing cf and df...")
       while(iterator.hasNext) {
         val doc = iterator.next()
-        cf ++= doc.tokens.groupBy(identity).mapValues(l => l.length + cf.getOrElse(l.head, 0))
-        df ++= doc.tokens.distinct.map(t => t -> (1 + df.getOrElse(t,0)))
+        val relevantTokens = doc.tokens.filter(queryTerms.contains)
+        cf ++= relevantTokens.groupBy(identity).mapValues(l => l.length + cf.getOrElse(l.head, 0))
+        df ++= relevantTokens.distinct.map(t => t -> (1 + df.getOrElse(t, 0)))
+        numberOfDocuments += 1
+        numberOfTokens += doc.tokens.size
       }
       println("Computed cf and df successfully.")
       cacheCollectionInformation()
