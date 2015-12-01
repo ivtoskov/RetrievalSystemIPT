@@ -36,11 +36,11 @@ object LanguageModel {
    * Initialize the collection frequencies.
    *
    * @param cfe The collection frequencies of the corpus.
+   * @param numOfTokens The total number of tokens in the collection.
    */
-  def initCollectionStats(cfe: MutMap[String, Int]): Unit = {
+  def initCollectionStats(cfe: MutMap[String, Int], numOfTokens: Long): Unit = {
     cf = cfe
-    for(i <- cf.values)
-      totalNumberOfTerms += i
+    totalNumberOfTerms = numOfTokens
   }
 
   /**

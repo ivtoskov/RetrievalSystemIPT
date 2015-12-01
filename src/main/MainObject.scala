@@ -1,7 +1,5 @@
 package main
 
-import scala.collection.mutable.{Map => MutMap}
-
 /**
  * The main class that starts the application.
  *
