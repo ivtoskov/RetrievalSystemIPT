@@ -25,8 +25,9 @@ class CustomMaxHeap(capacity: Int) {
    *
    * @param value The score value that may get inserted.
    * @param docName The DOCNO of the document that corresponds to the score.
+   * @return true if the document was added, false otherwise.
    */
-  def add(value: Double, docName: String): Unit = {
+  def add(value: Double, docName: String): Boolean = {
     if(size < capacity) {
       scores(size) = value
       names(size) = docName
@@ -45,6 +46,9 @@ class CustomMaxHeap(capacity: Int) {
         names(index - 1) = tempName
         index -= 1
       }
+      true
+    } else {
+      false
     }
   }
 

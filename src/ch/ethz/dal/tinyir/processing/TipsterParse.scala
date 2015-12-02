@@ -10,7 +10,7 @@ import ch.ethz.dal.tinyir.io.DocStream
 
 class TipsterParse(is: InputStream) extends XMLDocument(is) { 
   override def title  : String = "" 
-  override def body   : String = read(doc.getElementsByTagName("TEXT"))
+  override def body   : String = read(doc.getElementsByTagName("DOC"))
   override def name   : String = read(doc.getElementsByTagName("DOCNO")).filter(_.isLetterOrDigit)
   override def date   : String = ""
   override def content: String = body  

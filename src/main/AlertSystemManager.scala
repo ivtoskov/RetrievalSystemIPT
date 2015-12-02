@@ -41,8 +41,10 @@ class AlertSystemManager (val resourcePath: String) {
       val doc = queryScoreIterator.next()
       val docLength = doc.tokens.size.toDouble
       val docTf: Map[String, Int] = TfIdf.tf(doc.tokens)
-      val logDocTf: Map[String, Double] = TfIdf.logtf(docTf)
+
+      val logDocTf: Map[String, Double] = TfIdf.atf(docTf)
       for(query <- queries) {
+
         // Compute the tf-idf score for the given doc and query
         val tfIdfScore = TfIdf.score(logDocTf, query.tokens)
         tfIdfScores.get(query).get.add(tfIdfScore, doc.name.replaceAll("-", ""))
@@ -124,21 +126,19 @@ class AlertSystemManager (val resourcePath: String) {
    * into files that can be used for future runs.
    */
   def cacheCollectionInformation(): Unit = {
+    val statsWriter = new java.io.PrintWriter(new java.io.File("Resources/globalStats.csv"))
     // Cache the document frequencies
     printToFile(new java.io.File("Resources/cachedDf.csv")) { p =>
       df.keys.foreach(word => p.println(word + "," + df(word)))
     }
-    printToFile(new java.io.File("Resources/globalStats.csv")) {
-      p => p.println("Number of documents: " + numberOfDocuments)
-    }
+    statsWriter.println("Number of documents: " + numberOfDocuments)
 
     // Cache the collection frequencies
     printToFile(new java.io.File("Resources/cachedCf.csv")) { p =>
       cf.keys.foreach(word => p.println(word + "," + cf(word)))
     }
-    printToFile(new java.io.File("Resources/globalStats.csv")) {
-      p => p.append("Number of tokens: " + numberOfTokens)
-    }
+    statsWriter.println("Number of tokens: " + numberOfTokens)
+    statsWriter.close()
   }
 
   /**
