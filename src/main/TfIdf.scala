@@ -83,7 +83,7 @@ object TfIdf {
    */
   def logtf(tf: Map[String,Int]) : Map[String, Double] = {
     val sum = tf.values.sum.toDouble
-    tf.mapValues( v => log2( 1.0 + v.toDouble / sum ) )
+    tf.mapValues( v => log2( (1.0 + v.toDouble) / sum ) )
   }
 
   /**

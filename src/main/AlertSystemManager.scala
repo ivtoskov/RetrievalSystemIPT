@@ -19,7 +19,7 @@ class AlertSystemManager (val resourcePath: String) {
   var df = MutMap[String, Int]() // Document frequencies
   var perQueryRelDocIds: Map[String, List[String]] = null //Map containing the Queries and the relevant documents(dataset)
   var numberOfDocuments: Long = 0L // Corresponds to the total number of documents in the corpus
-  var numberOfTokens: Long = 0L // Correspons to the total number of tokens in the corpus
+  var numberOfTokens: Long = 0L // Corresponds to the total number of tokens in the corpus
 
   /**
    * The main method where the whole workflow is executed.
@@ -75,7 +75,8 @@ class AlertSystemManager (val resourcePath: String) {
     for (line <- Source.fromFile("Resources/topics").getLines()) {
       if (line.startsWith("<num>")) {
         val helper = line.split("Number:\\s*")
-        num = helper(1).replace(" ", "").substring(1)
+        num = helper(1).replace(" ", "")
+        if(!num.equals("100")) num = num.substring(1)
       }
 
       if (line.startsWith("<title>")) {
@@ -221,7 +222,7 @@ class AlertSystemManager (val resourcePath: String) {
       map = map + ev.AvgPrecision
       totalPrecisionLm += ev.precision
       totalRecallLm += ev.recall
-      totalF1Lm += ev.recall
+      totalF1Lm += ev.f1
     } )
     map = map / perQueryRelDocIds.size.toDouble
 
