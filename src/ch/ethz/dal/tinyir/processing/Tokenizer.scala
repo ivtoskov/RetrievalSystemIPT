@@ -1,7 +1,5 @@
 package ch.ethz.dal.tinyir.processing
 
-import com.github.aztek.porterstemmer.PorterStemmer
-
 object Tokenizer {
   val stopWords = Set("a", "about", "above", "above", "across", "after", "afterwards",
     "again", "against", "all", "almost", "alone", "along", "already", "also","although",

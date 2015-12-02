@@ -12,6 +12,13 @@ class Evaluate {
   var AvgPrecision = 0.0
   var f1 = 0.0
 
+  /**
+   * A method that evaluates the precision, recall, AP and F1 for
+   * list of retrieved documents with given list of relevant documents.
+   *
+   * @param retreiv List containing the names of the documents retrieved by the system.
+   * @param relev List containing the names of the documents that are specified in the qrels.
+   */
   def eval (retreiv: List[String], relev: List[String]) = {
     var i = 1.0
 
@@ -26,7 +33,7 @@ class Evaluate {
       }
       i += 1.0
     })
-
+    
     recall /= relev.length.toDouble
     f1 = 2 * precision * recall / (precision + recall)
     AvgPrecision /= scala.math.min(retreiv.length.toDouble, relev.length.toDouble)

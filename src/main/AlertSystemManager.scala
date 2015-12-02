@@ -1,7 +1,7 @@
 package main
 
 import ch.ethz.dal.tinyir.processing.{Tokenizer, TipsterCorpusIterator}
-import scala.collection.mutable.{Map => MutMap, MutableList => MutList}
+import scala.collection.mutable.{OpenHashMap => MutMap, MutableList => MutList}
 import java.nio.file.{Paths, Files}
 import scala.io.Source
 
@@ -181,6 +181,8 @@ class AlertSystemManager (val resourcePath: String) {
     perQueryRelDocIds = lines.filter(x => x(3) == "1").map(x => (x.head, x(2).replaceAll("-", ""))).groupBy(_._1).mapValues(_.map(x => x._2))
 
     var map: Double = 0.0
+    var totalPrecisionTfIdf: Double = 0.0
+    var totalPrecisionLm: Double = 0.0
 
     fileWriter.println("tf-idf scores: ")
     tfIdfScores.foreach( x => {
@@ -191,6 +193,7 @@ class AlertSystemManager (val resourcePath: String) {
         ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
       fileWriter.println()
       map = map + ev.AvgPrecision
+      totalPrecisionTfIdf += ev.precision
     } )
     map = map / perQueryRelDocIds.size.toDouble
     val tfIdfMAP = map
@@ -206,9 +209,12 @@ class AlertSystemManager (val resourcePath: String) {
         ", F1:" + ev.f1 + ", Average precision: " + ev.AvgPrecision)
       fileWriter.println()
       map = map + ev.AvgPrecision
+      totalPrecisionLm += ev.precision
     } )
     map = map / perQueryRelDocIds.size.toDouble
 
+    fileWriter.println("Total precision for the tf-idf scoring: " + totalPrecisionTfIdf / 100.0)
+    fileWriter.println("Total precision for the LM scoring: " + totalPrecisionLm / 100.0)
     fileWriter.println("MAP of the tf-idf scoring: " + tfIdfMAP)
     fileWriter.println("MAP of the language model scoring: " + map)
 

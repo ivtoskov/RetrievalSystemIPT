@@ -25,7 +25,7 @@ class CustomMaxHeap(capacity: Int) {
    *
    * @param value The score value that may get inserted.
    * @param docName The DOCNO of the document that corresponds to the score.
-   * @return true if the document was added, false otherwise.
+   * @return true if the document was added in the heap, false otherwise.
    */
   def add(value: Double, docName: String): Boolean = {
     if(size < capacity) {
