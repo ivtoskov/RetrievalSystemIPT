@@ -33,7 +33,7 @@ class Evaluate {
       }
       i += 1.0
     })
-    
+
     recall /= relev.length.toDouble
     f1 = 2 * precision * recall / (precision + recall)
     AvgPrecision /= scala.math.min(retreiv.length.toDouble, relev.length.toDouble)

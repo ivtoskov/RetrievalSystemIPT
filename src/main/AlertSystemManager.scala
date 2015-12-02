@@ -4,6 +4,7 @@ import ch.ethz.dal.tinyir.processing.{Tokenizer, TipsterCorpusIterator}
 import scala.collection.mutable.{OpenHashMap => MutMap, MutableList => MutList}
 import java.nio.file.{Paths, Files}
 import scala.io.Source
+import com.github.aztek.porterstemmer.PorterStemmer
 
 /**
  * Class that manages the whole flow.
@@ -40,7 +41,7 @@ class AlertSystemManager (val resourcePath: String) {
     while(queryScoreIterator.hasNext) {
       val doc = queryScoreIterator.next()
       val docLength = doc.tokens.size.toDouble
-      val docTf: Map[String, Int] = TfIdf.tf(doc.tokens)
+      val docTf: Map[String, Int] = TfIdf.tf(doc.tokens.map(word => PorterStemmer.stem(word)))
 
       val logDocTf: Map[String, Double] = TfIdf.atf(docTf)
       for(query <- queries) {
@@ -58,6 +59,7 @@ class AlertSystemManager (val resourcePath: String) {
     println("Computing Final Results...")
     // Compute the final result
     computeResult(tfIdfScores, lmScores)
+    printResult(tfIdfScores, lmScores)
   }
 
   /**
@@ -78,7 +80,7 @@ class AlertSystemManager (val resourcePath: String) {
 
       if (line.startsWith("<title>")) {
         val helper = line.split("Topic:\\s*")
-        queries += new Query(num, Tokenizer.tokenize(helper(1)))
+        queries += new Query(num, Tokenizer.tokenize(helper(1)).map(word => PorterStemmer.stem(word)))
       }
     }
     println("Queries: ")
@@ -108,7 +110,7 @@ class AlertSystemManager (val resourcePath: String) {
       println("Computing cf and df...")
       while(iterator.hasNext) {
         val doc = iterator.next()
-        val relevantTokens = doc.tokens.filter(queryTerms.contains)
+        val relevantTokens = doc.tokens.map(word => PorterStemmer.stem(word)).filter(queryTerms.contains)
         cf ++= relevantTokens.groupBy(identity).mapValues(l => l.length + cf.getOrElse(l.head, 0))
         df ++= relevantTokens.distinct.map(t => t -> (1 + df.getOrElse(t, 0)))
         numberOfDocuments += 1
@@ -184,6 +186,12 @@ class AlertSystemManager (val resourcePath: String) {
     var totalPrecisionTfIdf: Double = 0.0
     var totalPrecisionLm: Double = 0.0
 
+    var totalRecallTfIdf: Double = 0.0
+    var totalRecallLm: Double = 0.0
+
+    var totalF1TfIdf: Double = 0.0
+    var totalF1Lm: Double = 0.0
+
     fileWriter.println("tf-idf scores: ")
     tfIdfScores.foreach( x => {
       val ev = new Evaluate
@@ -194,6 +202,8 @@ class AlertSystemManager (val resourcePath: String) {
       fileWriter.println()
       map = map + ev.AvgPrecision
       totalPrecisionTfIdf += ev.precision
+      totalRecallTfIdf += ev.recall
+      totalF1TfIdf += ev.f1
     } )
     map = map / perQueryRelDocIds.size.toDouble
     val tfIdfMAP = map
@@ -210,11 +220,17 @@ class AlertSystemManager (val resourcePath: String) {
       fileWriter.println()
       map = map + ev.AvgPrecision
       totalPrecisionLm += ev.precision
+      totalRecallLm += ev.recall
+      totalF1Lm += ev.recall
     } )
     map = map / perQueryRelDocIds.size.toDouble
 
     fileWriter.println("Total precision for the tf-idf scoring: " + totalPrecisionTfIdf / 100.0)
     fileWriter.println("Total precision for the LM scoring: " + totalPrecisionLm / 100.0)
+    fileWriter.println("Total recall for the tf-idf scoring: " + totalRecallTfIdf / 100.0)
+    fileWriter.println("Total recall for the LM scoring: " + totalRecallLm / 100.0)
+    fileWriter.println("Total f1 for the tf-idf scoring: " + totalF1TfIdf / 100.0)
+    fileWriter.println("Total f1 for the LM scoring: " + totalF1Lm / 100.0)
     fileWriter.println("MAP of the tf-idf scoring: " + tfIdfMAP)
     fileWriter.println("MAP of the language model scoring: " + map)
 
@@ -231,5 +247,29 @@ class AlertSystemManager (val resourcePath: String) {
   def printToFile(f: java.io.File)(op: java.io.PrintWriter => Unit) {
     val p = new java.io.PrintWriter(f)
     try { op(p) } finally { p.close() }
+  }
+
+  def printResult(tfIdfScores: Map[Query, CustomMaxHeap], lmScores: Map[Query, CustomMaxHeap]): Unit = {
+    val tfIdfWriter = new java.io.PrintWriter(new java.io.File("ranking-t-23.run"))
+    val lmWriter = new java.io.PrintWriter(new java.io.File("ranking-l-23.run"))
+
+    tfIdfScores.foreach(x => {
+      var i=1
+      x._2.returnDocuments.foreach(doc_id => {
+        tfIdfWriter.println(x._1.num+" "+i+" "+doc_id)
+        i = i+1
+      })
+    })
+
+    lmScores.foreach(x => {
+      var i=1
+      x._2.returnDocuments.foreach(doc_id => {
+        lmWriter.println(x._1.num+" "+i+" "+doc_id)
+        i = i+1
+      })
+    })
+
+    tfIdfWriter.close()
+    lmWriter.close()
   }
 }
