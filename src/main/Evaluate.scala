@@ -4,7 +4,7 @@ package main
  * Class that calculates the performance measurements per query.
  * This includes precision, recall, f1 and MAP.
  *
- * @author Prabhakaran Santhanam
+ * @author Ivaylo Toskov
  */
 class Evaluate {
   var precision = 0.0

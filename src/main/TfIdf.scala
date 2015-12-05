@@ -7,7 +7,7 @@ import scala.math.log10
  * A class used to compute tf-idf based score for a given
  * document-query pair.
  *
- * @author Stefan Irimescu
+ * @author Ivaylo Toskov
  */
 object TfIdf {
   var idf = Map[String, Double]()   // Inverted document frequencies

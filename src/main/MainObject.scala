@@ -3,7 +3,7 @@ package main
 /**
  * The main class that starts the application.
  *
- * @author Stefan Irimescu
+ * @author Ivaylo Toskov
  */
 object MainObject {
   def main(args: Array[String]) {

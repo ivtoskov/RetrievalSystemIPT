@@ -12,7 +12,7 @@ import com.github.aztek.porterstemmer.PorterStemmer
  * @param resourcePath Path to a folder with the zip
  *                     files containing the documents.
  *
- * @author Stefan Irimescu
+ * @author Ivaylo Toskov
  */
 class AlertSystemManager (val resourcePath: String) {
   var cf = MutMap[String, Int]() // Collection frequencies
@@ -226,12 +226,12 @@ class AlertSystemManager (val resourcePath: String) {
     } )
     map = map / perQueryRelDocIds.size.toDouble
 
-    fileWriter.println("Total precision for the tf-idf scoring: " + totalPrecisionTfIdf / 100.0)
-    fileWriter.println("Total precision for the LM scoring: " + totalPrecisionLm / 100.0)
-    fileWriter.println("Total recall for the tf-idf scoring: " + totalRecallTfIdf / 100.0)
-    fileWriter.println("Total recall for the LM scoring: " + totalRecallLm / 100.0)
-    fileWriter.println("Total f1 for the tf-idf scoring: " + totalF1TfIdf / 100.0)
-    fileWriter.println("Total f1 for the LM scoring: " + totalF1Lm / 100.0)
+    fileWriter.println("Total precision for the tf-idf scoring: " + totalPrecisionTfIdf / perQueryRelDocIds.size.toDouble)
+    fileWriter.println("Total precision for the LM scoring: " + totalPrecisionLm / perQueryRelDocIds.size.toDouble)
+    fileWriter.println("Total recall for the tf-idf scoring: " + totalRecallTfIdf / perQueryRelDocIds.size.toDouble)
+    fileWriter.println("Total recall for the LM scoring: " + totalRecallLm / perQueryRelDocIds.size.toDouble)
+    fileWriter.println("Total f1 for the tf-idf scoring: " + totalF1TfIdf / perQueryRelDocIds.size.toDouble)
+    fileWriter.println("Total f1 for the LM scoring: " + totalF1Lm / perQueryRelDocIds.size.toDouble)
     fileWriter.println("MAP of the tf-idf scoring: " + tfIdfMAP)
     fileWriter.println("MAP of the language model scoring: " + map)
 
